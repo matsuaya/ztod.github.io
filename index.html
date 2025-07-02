@@ -41,7 +41,10 @@ fetch("tes_ztod.csv")
     const data = Papa.parse(csvText.trim(), { header: true }).data;
 
     data.forEach(row => {
-      const date = row["﻿開催日"]; // UTF-8 BOM対策
+      // const date = row["﻿開催日"]; // UTF-8 BOM対策
+      const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
+      const date = row[開催日Key];
+
       const location = row["場所"];
       const participants = [row["D"], row["ST1"], row["ST2"]];
 
