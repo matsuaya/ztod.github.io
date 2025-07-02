@@ -41,21 +41,25 @@ fetch("tes_ztod.csv")
     const data = Papa.parse(csvText.trim(), { header: true }).data;
 
     data.forEach(row => {
-      // const date = row["﻿開催日"]; // UTF-8 BOM対策
+      // "開催日"のキーを正確に探して、値をtrimして取得
       const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
-      const date = row[開催日Key];
+      if (!開催日Key) return;
 
-      const location = row["場所"];
+      const dateRaw = row[開催日Key];
+      if (!dateRaw) return;
+      const date = dateRaw.trim();  // トリムする！
+
+      const location = row["場所"] ? row["場所"].trim() : "";
       const participants = [row["D"], row["ST1"], row["ST2"]];
 
       participants.forEach(name => {
         if (!name) return;
-        if (!personSchedule[name]) {
-          // 初期化：すべての日付に空
-          personSchedule[name] = {};
-          days.forEach(d => personSchedule[name][d] = "");
+        const cleanName = name.trim();
+        if (!personSchedule[cleanName]) {
+          personSchedule[cleanName] = {};
+          days.forEach(d => personSchedule[cleanName][d] = "");
         }
-        personSchedule[name][date] = location;
+        personSchedule[cleanName][date] = location;
       });
     });
 
@@ -64,20 +68,25 @@ fetch("tes_ztod.csv")
 
 function renderTable() {
   const table = document.getElementById("scheduleTable");
+  table.innerHTML = "";
 
   // ヘッダー行
-  const thead = document.createElement("tr");
-  thead.innerHTML = `<th>名前</th>` + days.map(d => `<th>${d}</th>`).join("");
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headerRow.innerHTML = `<th>名前</th>` + days.map(d => `<th>${d}</th>`).join("");
+  thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // 各人物の行
+  // ボディ
+  const tbody = document.createElement("tbody");
   Object.entries(personSchedule).forEach(([name, schedule]) => {
     const row = document.createElement("tr");
-    row.innerHTML = `<td>${name}</td>` +
-      days.map(day => `<td>${schedule[day]}</td>`).join("");
-    table.appendChild(row);
+    row.innerHTML = `<td>${name}</td>` + days.map(day => `<td>${schedule[day] || ""}</td>`).join("");
+    tbody.appendChild(row);
   });
+  table.appendChild(tbody);
 }
+
 </script>
 </body>
 </html>
