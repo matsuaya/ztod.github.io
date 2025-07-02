@@ -1,39 +1,80 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sample Site</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <style>
-    </style>
+  <meta charset="UTF-8">
+  <title>スケジュールビュー</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-family: sans-serif;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 4px;
+      text-align: center;
+    }
+    th {
+      background-color: #eee;
+    }
+    td {
+      min-width: 40px;
+    }
+  </style>
 </head>
 <body>
-<header>
-    <nav class="navbar bg-body-tertiary fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">Sample Site</a>
-        </div>
-    </nav>
-</header>
-<main>
-    <div class="container mt-5 py-5">
-        <div class="p-4 rounded bg-body-secondary">
-            <h1 class="display-5 fst-italic">Welcome to Sample Site</h1>
-            <p class="lead mt-5">ここにテキストが入ります。ここにテキストが入ります。ここにテキストが入ります。ここにテキストが入ります。</p>
-            <p class="lead">ここにテキストが入ります。ここにテキストが入ります。ここにテキストが入ります。ここにテキストが入ります。</p>
-            <p class="lead"><a href="about.html">さらに詳しく</a></p>        
-        </div>
-        <div class="row my-5">
-            <h2>Contact</h2>
-            <p>お問い合わせは <a href="#">sample@sample.com</a> にお送りください。</p>
-        </div>
-    </div>
-</main>
-<footer class="py-3 fixed-bottom bg-body-tertiary">
-  <div class="text-center">
-    <span class="text-body-secondary">© Sample Site</span>
-  </div>
-</footer>
+
+<h2>スケジュールビュー（7月）</h2>
+<table id="scheduleTable"></table>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+<script>
+// 日付列の生成（7/1～7/31）
+const days = Array.from({ length: 31 }, (_, i) => `7/${i + 1}`);
+
+// データ構造 { 名前: { "7/1": "A", "7/2": "", ..., "7/31": "" } }
+const personSchedule = {};
+
+fetch("tes_ztod.csv")
+  .then(response => response.text())
+  .then(csvText => {
+    const data = Papa.parse(csvText.trim(), { header: true }).data;
+
+    data.forEach(row => {
+      const date = row["﻿開催日"]; // UTF-8 BOM対策
+      const location = row["場所"];
+      const participants = [row["D"], row["ST1"], row["ST2"]];
+
+      participants.forEach(name => {
+        if (!name) return;
+        if (!personSchedule[name]) {
+          // 初期化：すべての日付に空
+          personSchedule[name] = {};
+          days.forEach(d => personSchedule[name][d] = "");
+        }
+        personSchedule[name][date] = location;
+      });
+    });
+
+    renderTable();
+  });
+
+function renderTable() {
+  const table = document.getElementById("scheduleTable");
+
+  // ヘッダー行
+  const thead = document.createElement("tr");
+  thead.innerHTML = `<th>名前</th>` + days.map(d => `<th>${d}</th>`).join("");
+  table.appendChild(thead);
+
+  // 各人物の行
+  Object.entries(personSchedule).forEach(([name, schedule]) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${name}</td>` +
+      days.map(day => `<td>${schedule[day]}</td>`).join("");
+    table.appendChild(row);
+  });
+}
+</script>
 </body>
 </html>
