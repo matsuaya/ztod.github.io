@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>スケジュールビュー</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-family: sans-serif;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 4px;
+      text-align: center;
+    }
+    th {
+      background-color: #eee;
+    }
+    td {
+      min-width: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>スケジュールビュー（7月）</h2>
+<table id="scheduleTable"></table>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+<script>
+// 日付列の生成（7/1～7/31）
+const days = Array.from({ length: 31 }, (_, i) => `7/${i + 1}`);
+
+// データ構造 { 名前: { "7/1": "A", ..., "7/31": "" } }
+const personSchedule = {};
+
+fetch("シフトテスト - 1月,4月,7月,10月.csv")
+  .then(response => response.text())
+  .then(csvText => {
+    const parsed = Papa.parse(csvText.trim(), {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true
+    });
+
+    const data = parsed.data;
+    const headers = parsed.meta.fields;
+
+    // 同じ「スタッフ名」が複数ある → 列インデックスで抽出
+    const staffColumnIndexes = [];
+    headers.forEach((h, idx) => {
+      if (h.trim() === "スタッフ名") {
+        staffColumnIndexes.push(idx);
+      }
+    });
+
+    data.forEach(row => {
+      const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
+      if (!開催日Key || !row[開催日Key]) return;
+      const date = String(row[開催日Key]).trim();
+
+      // 「施策名」へ修正（旧「場所」）
+      const location = row["施策名"] ? String(row["施策名"]).trim() : "";
+
+      const allValues = Object.values(row);
+      const participants = [];
+
+      // ディレクター名を追加
+      if (row["ディレクター名"]) {
+        participants.push(String(row["ディレクター名"]).trim());
+      }
+
+      // スタッフ名をすべて抽出（同名列でも順番に抽出）
+      staffColumnIndexes.forEach(i => {
+        const name = allValues[i];
+        if (name) participants.push(String(name).trim());
+      });
+
+      participants.forEach(name => {
+        if (!personSchedule[name]) {
+          personSchedule[name] = {};
+          days.forEach(d => personSchedule[name][d] = "");
+        }
+        personSchedule[name][date] = location;
+      });
+    });
+
+    renderTable();
+  });
+
+function renderTable() {
+  const table = document.getElementById("scheduleTable");
+  table.innerHTML = "";
+
+  // ヘッダー
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headerRow.innerHTML = `<th>名前</th>` + days.map(d => `<th>${d}</th>`).join("");
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  // 本体
+  const tbody = document.createElement("tbody");
+  Object.entries(personSchedule).forEach(([name, schedule]) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${name}</td>` + days.map(day => `<td>${schedule[day] || ""}</td>`).join("");
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+}
+</script>
+</body>
+</html>
