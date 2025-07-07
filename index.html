@@ -35,22 +35,30 @@ const days = Array.from({ length: 31 }, (_, i) => `7/${i + 1}`);
 // データ構造 { 名前: { "7/1": "A", "7/2": "", ..., "7/31": "" } }
 const personSchedule = {};
 
-fetch("tes_ztod.csv")
+fetch("シフトテスト - 1月,4月,7月,10月.csv")
   .then(response => response.text())
   .then(csvText => {
-    const data = Papa.parse(csvText.trim(), { header: true }).data;
+    const parsed = Papa.parse(csvText.trim(), { header: true });
+    const data = parsed.data;
+    const headers = parsed.meta.fields;
+
+    // スタッフ名列を抽出（列名がすべて「スタッフ名」なので index で区別）
+    const staffKeys = headers.filter(h => h === "スタッフ名");
 
     data.forEach(row => {
-      // "開催日"のキーを正確に探して、値をtrimして取得
       const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
       if (!開催日Key) return;
 
       const dateRaw = row[開催日Key];
       if (!dateRaw) return;
-      const date = dateRaw.trim();  // トリムする！
+      const date = dateRaw.trim();
 
-      const location = row["場所"] ? row["場所"].trim() : "";
-      const participants = [row["D"], row["ST1"], row["ST2"]];
+      const location = row["施策名"] ? row["施策名"].trim() : "";
+
+      const participants = [
+        row["ディレクター名"],
+        ...staffKeys.map(k => row[k])
+      ];
 
       participants.forEach(name => {
         if (!name) return;
@@ -86,7 +94,6 @@ function renderTable() {
   });
   table.appendChild(tbody);
 }
-
 </script>
 </body>
 </html>
