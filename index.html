@@ -42,7 +42,7 @@ fetch("シフトテスト - 1月,4月,7月,10月.csv")
     const data = parsed.data;
     const headers = parsed.meta.fields;
 
-    // スタッフ名列を抽出（列名がすべて「スタッフ名」なので index で区別）
+    // "スタッフ名"という名前の列をすべて取得
     const staffKeys = headers.filter(h => h === "スタッフ名");
 
     data.forEach(row => {
@@ -57,7 +57,10 @@ fetch("シフトテスト - 1月,4月,7月,10月.csv")
 
       const participants = [
         row["ディレクター名"],
-        ...staffKeys.map(k => row[k])
+        ...staffKeys.map((k, i) => {
+          // Papaparseでは同名の列が上書きされるため、スタッフ名が複数ある場合は index ベースで直接取得（回避不可なら列名変更要）
+          return row[`スタッフ名${i ? `_${i}` : ''}`] || row[k];
+        })
       ];
 
       participants.forEach(name => {
