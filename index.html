@@ -35,33 +35,22 @@ const days = Array.from({ length: 31 }, (_, i) => `7/${i + 1}`);
 // データ構造 { 名前: { "7/1": "A", "7/2": "", ..., "7/31": "" } }
 const personSchedule = {};
 
-fetch("シフトテスト - 1月,4月,7月,10月.csv")
+fetch("tes_ztod.csv")
   .then(response => response.text())
   .then(csvText => {
-    const parsed = Papa.parse(csvText.trim(), { header: true });
-    const data = parsed.data;
-    const headers = parsed.meta.fields;
-
-    // "スタッフ名"という名前の列をすべて取得
-    const staffKeys = headers.filter(h => h === "スタッフ名");
+    const data = Papa.parse(csvText.trim(), { header: true }).data;
 
     data.forEach(row => {
+      // "開催日"のキーを正確に探して、値をtrimして取得
       const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
       if (!開催日Key) return;
 
       const dateRaw = row[開催日Key];
       if (!dateRaw) return;
-      const date = dateRaw.trim();
+      const date = dateRaw.trim();  // トリムする！
 
-      const location = row["施策名"] ? row["施策名"].trim() : "";
-
-      const participants = [
-        row["ディレクター名"],
-        ...staffKeys.map((k, i) => {
-          // Papaparseでは同名の列が上書きされるため、スタッフ名が複数ある場合は index ベースで直接取得（回避不可なら列名変更要）
-          return row[`スタッフ名${i ? `_${i}` : ''}`] || row[k];
-        })
-      ];
+      const location = row["場所"] ? row["場所"].trim() : "";
+      const participants = [row["D"], row["ST1"], row["ST2"]];
 
       participants.forEach(name => {
         if (!name) return;
@@ -97,6 +86,7 @@ function renderTable() {
   });
   table.appendChild(tbody);
 }
+
 </script>
 </body>
 </html>
