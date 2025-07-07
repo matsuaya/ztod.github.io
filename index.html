@@ -45,15 +45,6 @@ fetch("シフトテスト - 1月,4月,7月,10月.csv")
     });
 
     const data = parsed.data;
-    const headers = parsed.meta.fields;
-
-    // 同じ「スタッフ名」が複数ある → 列インデックスで抽出
-    const staffColumnIndexes = [];
-    headers.forEach((h, idx) => {
-      if (h.trim() === "スタッフ名") {
-        staffColumnIndexes.push(idx);
-      }
-    });
 
     data.forEach(row => {
       const 開催日Key = Object.keys(row).find(k => k.includes("開催日"));
@@ -63,19 +54,19 @@ fetch("シフトテスト - 1月,4月,7月,10月.csv")
       // 「施策名」へ修正（旧「場所」）
       const location = row["施策名"] ? String(row["施策名"]).trim() : "";
 
-      const allValues = Object.values(row);
       const participants = [];
 
-      // ディレクター名を追加
       if (row["ディレクター名"]) {
         participants.push(String(row["ディレクター名"]).trim());
       }
 
-      // スタッフ名をすべて抽出（同名列でも順番に抽出）
-      staffColumnIndexes.forEach(i => {
-        const name = allValues[i];
-        if (name) participants.push(String(name).trim());
-      });
+      // スタッフ名1〜4を追加
+      for (let i = 1; i <= 4; i++) {
+        const key = `スタッフ名${i}`;
+        if (row[key]) {
+          participants.push(String(row[key]).trim());
+        }
+      }
 
       participants.forEach(name => {
         if (!personSchedule[name]) {
@@ -93,14 +84,12 @@ function renderTable() {
   const table = document.getElementById("scheduleTable");
   table.innerHTML = "";
 
-  // ヘッダー
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
   headerRow.innerHTML = `<th>名前</th>` + days.map(d => `<th>${d}</th>`).join("");
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
-  // 本体
   const tbody = document.createElement("tbody");
   Object.entries(personSchedule).forEach(([name, schedule]) => {
     const row = document.createElement("tr");
